@@ -1,0 +1,32 @@
+name: flutter_turismo
+description: "Sitios turísticos del mundo — Tutorial Layout + Interactividad Flutter."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - images/lake.jpg
+    - images/machu_picchu.jpg
+    - images/torre_eiffel.jpg
+    - images/gran_muralla.jpg
+    - images/coliseo.jpg
+    - images/taj_mahal.jpg
+    - images/galapagos.jpg
+    - images/petra.jpg
+    - images/iguazu.jpg
+    - images/angkor_wat.jpg

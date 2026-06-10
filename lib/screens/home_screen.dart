@@ -12,8 +12,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
 
-  List<SitioTuristico> get _favoritos => sitiosTuristicos.where((s) => s.esFavorito).toList();
-
   List<String> get _categories {
     final categories = sitiosTuristicos.map((s) => s.categoria).toSet().toList();
     categories.sort();
@@ -31,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final featured = sitiosTuristicos.first;
+    final favoritos = sitiosTuristicos.where((s) => s.esFavorito).toList();
     final visibles = _visibleSites;
 
     return Scaffold(
@@ -125,7 +123,20 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            _FeaturedCard(site: featured, onOpen: () => _openSite(featured)),
+            if (favoritos.isNotEmpty)
+              ...favoritos.map(
+                (site) => Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _FeaturedCard(
+                    site: site,
+                    onOpen: () => _openSite(site),
+                    onFavoriteToggle: () => _toggleFavorite(site),
+                  ),
+                ),
+              )
+            else
+              _buildEmptyFavoritos(),
+
             const SizedBox(height: 22),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -160,7 +171,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ...visibles.map(
                 (site) => Padding(
                   padding: const EdgeInsets.only(bottom: 14),
-                  child: _EditorialCard(site: site, onTap: () => _openSite(site)),
+                  child: _EditorialCard(
+                    site: site,
+                    onTap: () => _openSite(site),
+                    onFavoriteToggle: () => _toggleFavorite(site),
+                  ),
                 ),
               ),
           ],
@@ -182,6 +197,42 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildEmptyFavoritos() {
+    return Container(
+      height: 320,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: const Color(0xFFE8E0D6)),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.star_border, size: 48, color: Colors.grey.shade300),
+            const SizedBox(height: 12),
+            Text(
+              'Sin favoritos aún',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Explora y guarda tus destinos favoritos',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade400,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _openSite(SitioTuristico sitio) {
     Navigator.push(
       context,
@@ -190,13 +241,24 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     ).then((_) => setState(() {}));
   }
+
+  void _toggleFavorite(SitioTuristico sitio) {
+    setState(() {
+      sitio.esFavorito = !sitio.esFavorito;
+    });
+  }
 }
 
 class _FeaturedCard extends StatelessWidget {
-  const _FeaturedCard({required this.site, required this.onOpen});
+  const _FeaturedCard({
+    required this.site,
+    required this.onOpen,
+    required this.onFavoriteToggle,
+  });
 
   final SitioTuristico site;
   final VoidCallback onOpen;
+  final VoidCallback onFavoriteToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -237,7 +299,10 @@ class _FeaturedCard extends StatelessWidget {
               Positioned(
                 top: 16,
                 right: 16,
-                child: _FloatingFavorite(site: site),
+                child: _FloatingFavorite(
+                  site: site,
+                  onFavoriteToggle: onFavoriteToggle,
+                ),
               ),
               Positioned(
                 left: 20,
@@ -295,10 +360,15 @@ class _FeaturedCard extends StatelessWidget {
 }
 
 class _EditorialCard extends StatelessWidget {
-  const _EditorialCard({required this.site, required this.onTap});
+  const _EditorialCard({
+    required this.site,
+    required this.onTap,
+    required this.onFavoriteToggle,
+  });
 
   final SitioTuristico site;
   final VoidCallback onTap;
+  final VoidCallback onFavoriteToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -346,6 +416,15 @@ class _EditorialCard extends StatelessWidget {
                             site.calificacion.toStringAsFixed(1),
                             style: const TextStyle(fontWeight: FontWeight.w700),
                           ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: onFavoriteToggle,
+                            child: Icon(
+                              site.esFavorito ? Icons.star : Icons.star_border,
+                              color: site.esFavorito ? Colors.amber : Colors.grey,
+                              size: 20,
+                            ),
+                          ),
                           const Spacer(),
                           Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey.shade400),
                         ],
@@ -362,45 +441,30 @@ class _EditorialCard extends StatelessWidget {
   }
 }
 
-class _FloatingFavorite extends StatefulWidget {
-  const _FloatingFavorite({required this.site});
+class _FloatingFavorite extends StatelessWidget {
+  const _FloatingFavorite({
+    required this.site,
+    required this.onFavoriteToggle,
+  });
 
   final SitioTuristico site;
-
-  @override
-  State<_FloatingFavorite> createState() => _FloatingFavoriteState();
-}
-
-class _FloatingFavoriteState extends State<_FloatingFavorite> {
-  late bool _liked;
-
-  @override
-  void initState() {
-    super.initState();
-    _liked = widget.site.esFavorito;
-  }
-
-  void _toggle() {
-    setState(() {
-      _liked = !_liked;
-      widget.site.esFavorito = _liked;
-    });
-  }
+  final VoidCallback onFavoriteToggle;
 
   @override
   Widget build(BuildContext context) {
+    final liked = site.esFavorito;
     return GestureDetector(
-      onTap: _toggle,
+      onTap: onFavoriteToggle,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: _liked ? const Color(0xFF0F766E) : Colors.black.withOpacity(0.22),
+          color: Colors.black.withOpacity(0.22),
           borderRadius: BorderRadius.circular(999),
         ),
         child: Icon(
-          _liked ? Icons.favorite : Icons.favorite_border,
-          color: Colors.white,
-          size: 18,
+          liked ? Icons.star : Icons.star_border,
+          color: liked ? Colors.amber : Colors.white,
+          size: 20,
         ),
       ),
     );
